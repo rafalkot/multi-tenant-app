@@ -1,0 +1,4 @@
+name: DefaultDb Database Migrations
+migrations_namespace: DoctrineMigrations\DefaultDb
+table_name: migration_versions
+migrations_directory: src/Migrations/DefaultDb

@@ -1,0 +1,57 @@
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
+parameters:
+
+services:
+    # shop configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        public: false       # Allows optimizing the container by removing unused services; this also means
+                            # fetching services directly from the container via $container->get() won't work.
+                            # The best practice is to be explicit about your dependencies anyway.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/*'
+        exclude: '../src/{Entity,EventListener,Migrations,Tests,Kernel.php}'
+
+    # controllers are imported separately to make sure services can be injected
+    # as action arguments even if you don't extend any base controller class
+    App\Controller\:
+        resource: '../src/Controller'
+        tags: ['controller.service_arguments']
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+
+    App\Service\TenantContext: '@app.service.tenant_context'
+
+    app.service.tenant_context:
+        public: true
+        class: 'App\Service\TenantContext'
+
+    App\Repository\TenantRepositoryInterface: '@app.repository.tenant_repository'
+
+    app.repository.tenant_repository:
+        class: 'App\Repository\DoctrineTenantRepository'
+        arguments: ['@doctrine.orm.default_entity_manager']
+
+    App\Repository\ProductRepositoryInterface: '@app.repository.product_repository'
+
+    app.repository.product_repository:
+        class: 'App\Repository\DoctrineProductRepository'
+        arguments: ['@doctrine.orm.tenant_entity_manager']
+
+    app.event_listener.tenaant_request_listener:
+        class: 'App\EventListener\TenantRequestListener'
+        arguments: ['@app.repository.tenant_repository', '@doctrine.dbal.tenant_connection', '@app.service.tenant_context']
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, method: onKernelRequest }
+
+    app.event_listener.tenant_command_listener:
+        class: 'App\EventListener\TenantCommandListener'
+        arguments: [ '@app.repository.tenant_repository', '@doctrine.dbal.tenant_connection', '@app.service.tenant_context']
+        tags:
+            - { name: kernel.event_listener, event: console.command, method: onConsoleCommand }

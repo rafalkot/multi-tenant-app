@@ -1,0 +1,4 @@
+name: Tenant Database Migrations
+migrations_namespace: DoctrineMigrations\Tenant
+table_name: migration_versions
+migrations_directory: src/Migrations/Tenant
