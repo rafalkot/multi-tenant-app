@@ -14,4 +14,5 @@ interface TenantRepositoryInterface
 
     public function findByName(string $name):? Tenant;
 
+    public function save(Tenant $tenant): void;
 }

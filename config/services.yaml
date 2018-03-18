@@ -1,6 +1,10 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
+    template_filler_template: 'db_1'
+    sql_file_filler_files:
+        - '%kernel.project_dir%/data/sql/schema.sql'
+        - '%kernel.project_dir%/data/sql/data.sql'
 
 services:
     # shop configuration for services in *this* file
@@ -35,6 +39,7 @@ services:
     App\Repository\TenantRepositoryInterface: '@app.repository.tenant_repository'
 
     app.repository.tenant_repository:
+        public: true
         class: 'App\Repository\DoctrineTenantRepository'
         arguments: ['@doctrine.orm.default_entity_manager']
 
@@ -55,3 +60,27 @@ services:
         arguments: [ '@app.repository.tenant_repository', '@doctrine.dbal.tenant_connection', '@app.service.tenant_context']
         tags:
             - { name: kernel.event_listener, event: console.command, method: onConsoleCommand }
+
+    app.service.tenant_database_service:
+        class: 'App\Service\TenantDatabaseService'
+        public: true
+        arguments: ['@doctrine.dbal.default_connection', '@app.service.database_filler']
+
+    #app.service.database_filler: '@app.service.database_filler.sql_file_filler'
+    #app.service.database_filler: '@app.service.database_filler.doctrine_filler'
+    app.service.database_filler: '@app.service.database_filler.template_filler'
+
+    app.service.database_filler.null_filler:
+        class: 'App\Service\DatabaseFiller\NullFiller'
+
+    app.service.database_filler.template_filler:
+        class: 'App\Service\DatabaseFiller\TemplateFiller'
+        arguments: ['@doctrine.dbal.default_connection', '@doctrine.dbal.tenant_connection', '%template_filler_template%']
+
+    app.service.database_filler.doctrine_filler:
+        class: 'App\Service\DatabaseFiller\DoctrineSchemaFiller'
+        arguments: ['@kernel']
+
+    app.service.database_filler.sql_file_filler:
+        class: 'App\Service\DatabaseFiller\SqlFileFiller'
+        arguments: ['@kernel', '%sql_file_filler_files%']

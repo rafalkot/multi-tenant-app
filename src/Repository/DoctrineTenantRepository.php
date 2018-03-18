@@ -50,4 +50,10 @@ final class DoctrineTenantRepository implements TenantRepositoryInterface
                 ]
             );
     }
+
+    public function save(Tenant $tenant): void
+    {
+        $this->em->persist($tenant);
+        $this->em->flush();
+    }
 }
